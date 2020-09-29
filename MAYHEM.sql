@@ -259,6 +259,7 @@ CREATE TABLE source (
 	entity varchar NOT NULL,
 	repository varchar NOT NULL,
 	filename varchar NOT NULL,
+	accessible varchar NULL,
 	CONSTRAINT source_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid)
 );
 
