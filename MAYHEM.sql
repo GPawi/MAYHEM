@@ -9,6 +9,7 @@ TABLESPACE = pg_default;
 
 CREATE SCHEMA analysis_system AUTHORIZATION postgres;
 
+ALTER DATABASE "MAYHEM-Example" SET search_path TO analysis_system;
 SET search_path TO analysis_system;
 
 -- analysis_system.climateclassification definition
