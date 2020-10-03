@@ -365,9 +365,9 @@ class data_preparation(object):
         __suppress_message = self.__suppress_message
         try:
             self.__chironomid_data = __input_dictionary['Chironomid']
-            self.__chironomid_data.columns = self.__chironomid_data.iloc[5]
-            self.__chironomid_data = self.__chironomid_data.drop(self.__chironomid_data.index[5])
-            self.__chironomid_data  = self.__chironomid_data.iloc[5:, 1:]
+            self.__chironomid_data.columns = self.__chironomid_data.iloc[6]
+            self.__chironomid_data = self.__chironomid_data.drop(self.__chironomid_data.index[6])
+            self.__chironomid_data  = self.__chironomid_data.iloc[6:, 1:]
             self.__chironomid_data  = self.__chironomid_data.dropna(axis = 1, how = 'all')
             self.__chironomid_names = self.__chironomid_data.columns[1:].values.tolist()
             self.__input_chironomid = pd.DataFrame(columns = ['measurementid','chironomid_taxa','chironomid_count'])
