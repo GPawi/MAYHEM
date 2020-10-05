@@ -161,7 +161,7 @@ CREATE TABLE mineral (
 	mineral_name varchar NOT NULL,
 	mineral_wavelength numeric NULL,
 	mineral_intensity int4 NULL,
-	CONSTRAINT minerals_un UNIQUE (measurementid, mineral_name, mineral_wavelength),
+	CONSTRAINT minerals_un PRIMARY KEY (measurementid, mineral_name, mineral_wavelength),
 	CONSTRAINT minerals_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -181,7 +181,7 @@ CREATE TABLE modeloutput (
 	upper_1_sigma numeric(8,2) NULL,
 	upper_2_sigma numeric(8,2) NULL,
 	model_name varchar NOT NULL,
-	CONSTRAINT modeloutput_un UNIQUE (measurementid, model_name),
+	CONSTRAINT modeloutput_un PRIMARY KEY (measurementid, model_name),
 	CONSTRAINT modeloutput_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -199,7 +199,7 @@ CREATE TABLE organic (
 	toc numeric(4,2) NULL,
 	d13c numeric(4,2) NULL,
 	water_content numeric(5,2) NULL,
-	CONSTRAINT organics_un UNIQUE (measurementid),
+	CONSTRAINT organics_un PRIMARY KEY (measurementid),
 	CONSTRAINT organics_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -213,7 +213,7 @@ CREATE TABLE organic (
 CREATE TABLE participant (
 	coreid varchar NOT NULL,
 	scientistid int4 NOT NULL,
-	CONSTRAINT participant_un UNIQUE (coreid, scientistid),
+	CONSTRAINT participant_un PRIMARY KEY (coreid, scientistid),
 	CONSTRAINT participant_fk FOREIGN KEY (scientistid) REFERENCES scientist(scientistid),
 	CONSTRAINT participant_fk_1 FOREIGN KEY (coreid) REFERENCES drilling(coreid)
 );
@@ -229,7 +229,7 @@ CREATE TABLE pollen (
 	measurementid varchar NOT NULL,
 	pollen_taxa varchar NOT NULL,
 	pollen_count numeric NULL,
-	CONSTRAINT pollen_un UNIQUE (measurementid, pollen_taxa),
+	CONSTRAINT pollen_un PRIMARY KEY (measurementid, pollen_taxa),
 	CONSTRAINT pollen_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -284,7 +284,7 @@ CREATE TABLE agedetermination (
 	pretreatment_dating varchar NULL,
 	reservoir_age numeric(7,2) NULL,
 	reservoir_error numeric(7,2) NULL,
-	CONSTRAINT agedetermination_un UNIQUE (measurementid, labid),
+	CONSTRAINT agedetermination_un PRIMARY KEY (measurementid, labid),
 	CONSTRAINT agedetermination_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -299,7 +299,7 @@ CREATE TABLE chironomid (
 	measurementid varchar NOT NULL,
 	chironomid_taxa varchar NOT NULL,
 	chironomid_count numeric NULL,
-	CONSTRAINT chironomids_un UNIQUE (measurementid, chironomid_taxa),
+	CONSTRAINT chironomids_un PRIMARY KEY (measurementid, chironomid_taxa),
 	CONSTRAINT chironomids_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -314,7 +314,7 @@ CREATE TABLE diatom (
 	measurementid varchar NOT NULL,
 	diatom_taxa varchar NOT NULL,
 	diatom_count numeric NULL,
-	CONSTRAINT diatoms_un UNIQUE (measurementid, diatom_taxa),
+	CONSTRAINT diatoms_un PRIMARY KEY (measurementid, diatom_taxa),
 	CONSTRAINT diatoms_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -329,7 +329,7 @@ CREATE TABLE element (
 	measurementid varchar NOT NULL,
 	element_name varchar NULL,
 	element_value numeric NULL,
-	CONSTRAINT elements_un UNIQUE (measurementid, element_name),
+	CONSTRAINT elements_un PRIMARY KEY (measurementid, element_name),
 	CONSTRAINT elements_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
 
@@ -352,6 +352,6 @@ CREATE TABLE grainsize (
 	medium_sand numeric(4,2) NULL,
 	coarse_sand numeric(4,2) NULL,
 	total_gravel numeric(4,2) NULL,
-	CONSTRAINT grainsize_un UNIQUE (measurementid),
+	CONSTRAINT grainsize_un PRIMARY KEY (measurementid),
 	CONSTRAINT grainsize_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
