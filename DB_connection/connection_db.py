@@ -32,7 +32,8 @@ class connection_db(object):
             self.__db = input(f'What is the database name in which {self.__coreid} should be inserted? ')
             self.__password = password
             
-        self.__engine = sqlalchemy.create_engine(f'postgresql://postgres:{self.__password}@localhost/{self.__db}', executemany_mode='batch') #, execution_options={"isolation_level": "SERIALIZABLE"})
+        self.__engine = sqlalchemy.create_engine(f'postgresql://postgres:{self.__password}@localhost/{self.__db}',
+                                                 executemany_mode='batch')
         
     
     def __upload_scientist__(self, con = []):
