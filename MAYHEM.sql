@@ -194,9 +194,9 @@ CREATE TABLE modeloutput (
 
 CREATE TABLE organic (
 	measurementid varchar NOT NULL,
-	tn numeric(4,2) NULL,
-	tc numeric(4,2) NULL,
-	toc numeric(4,2) NULL,
+	tn numrange NULL,
+	tc numrange NULL,
+	toc numrange NULL,
 	d13c numeric(4,2) NULL,
 	water_content numeric(5,2) NULL,
 	CONSTRAINT organics_un PRIMARY KEY (measurementid),
@@ -245,6 +245,7 @@ CREATE TABLE publication (
 	citation varchar NOT NULL,
 	type varchar(12) NOT NULL,
 	coreid varchar NOT NULL,
+	CONSTRAINT publication_un PRIMARY KEY (coreid, pubshort),
 	CONSTRAINT publication_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid)
 );
 
@@ -261,6 +262,7 @@ CREATE TABLE source (
 	repository varchar NOT NULL,
 	filename varchar NOT NULL,
 	accessible varchar NULL,
+	CONSTRAINT source_un PRIMARY KEY (coreid, entity, filename),
 	CONSTRAINT source_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid)
 );
 
@@ -279,8 +281,8 @@ CREATE TABLE agedetermination (
 	material_category varchar(22) NULL,
 	material_description varchar NULL,
 	material_weight int4 NULL,
-	age numeric(8,2) NOT NULL,
-	age_error numeric(7,2) NOT NULL,
+	age numrange NOT NULL,
+	age_error numeric(7,2) NULL,
 	pretreatment_dating varchar NULL,
 	reservoir_age numeric(7,2) NULL,
 	reservoir_error numeric(7,2) NULL,
@@ -328,7 +330,7 @@ CREATE TABLE diatom (
 CREATE TABLE element (
 	measurementid varchar NOT NULL,
 	element_name varchar NULL,
-	element_value numeric NULL,
+	element_value numrange NULL,
 	CONSTRAINT elements_un PRIMARY KEY (measurementid, element_name),
 	CONSTRAINT elements_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
