@@ -7,13 +7,12 @@ github: GPawi
 Plans for v2: combine diatom, chironomid and pollen data prep in one function
 """
 
-
 import numpy as np
 import pandas as pd
 import sqlalchemy
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-
+from psycopg2.extras import NumericRange
 
 
 class data_preparation(object):
@@ -259,6 +258,24 @@ class data_preparation(object):
                                                  'Total Organic Carbon \n(TOC, %)':'toc',
                                                  'δ13C  \n(‰ vs. VPDB)':'d13c',
                                                  'water content (%)':'water_content'}, inplace=True)
+            ### For detection limit
+            self.__input_organic.reset_index(drop = True, inplace = True)
+            for i in range(0, len(self.__input_organic)):
+                for j in range(1,6):
+                    if type(self.__input_organic.iloc[i,j]) is str and '<' in self.__input_organic.iloc[i,j]:
+                        __organic_array = self.__input_organic.iloc[i,j].split('<')
+                        __organic_indi = NumericRange(None, round(float(__organic_array[1]),3), bounds = '()', empty = False)
+                        self.__input_organic.iloc[i,j] = __organic_indi
+                    elif type(self.__input_organic.iloc[i,j]) is str and '>' in self.__input_organic.iloc[i,j]:
+                        __organic_array = self.__input_organic.iloc[i,j].split('>')
+                        __organic_indi = NumericRange(round(float(__organic_array[1]),3), None, bounds = '[)', empty = False)
+                        self.__input_organic.iloc[i,j] = __organic_indi
+                    elif np.isnan(self.__input_organic.iloc[i,j]) == True:
+                        pass
+                    else:
+                        __organic_indi = NumericRange(round(self.__input_organic.iloc[i,j],3), round(self.__input_organic.iloc[i,j],3), bounds = '[]', empty = False)
+                        self.__input_organic.iloc[i,j] = __organic_indi
+            ###
         except KeyError:
             if __suppress_message == False:
                 print(f'No organic data for {__coreid}')
@@ -307,6 +324,21 @@ class data_preparation(object):
                 for k in range(0,len(self.__element_data)):
                     self.__element_row = pd.DataFrame(np.array([[self.__element_data.iloc[k,0],self.__element_names[j-1],self.__element_data.iloc[k,j]]]), columns = ['measurementid','element_name','element_value'])
                     self.__input_element= self.__input_element.append(self.__element_row)
+            ### For detection limit
+            self.__input_element.reset_index(drop = True, inplace = True)
+            for i in range(0, len(self.__input_element)):
+                if type(self.__input_element.iloc[i,2]) is str and '<' in self.__input_element.iloc[i,2]:
+                    __element_array = self.__input_element.iloc[i,2].split('<')
+                    __element_indi = NumericRange(None, round(float(__element_array[1]),3), bounds = '()', empty = False)
+                    self.__input_element.iloc[i,2] = __element_indi
+                elif type(self.__input_element.iloc[i,2]) is str and '>' in self.__input_element.iloc[i,2]:
+                    __element_array = self.__input_element.iloc[i,2].split('>')
+                    __element_indi = NumericRange(round(float(__element_array[1]),3), None, bounds = '[)', empty = False)
+                    self.__input_element.iloc[i,2] = __element_indi
+                else:
+                    __element_indi = NumericRange(round(float(self.__input_element.iloc[i,2]),3), round(float(self.__input_element.iloc[i,2]),3), bounds = '[]', empty = False)
+                    self.__input_element.iloc[i,2] = __element_indi
+            ###
         except KeyError:
             if __suppress_message == False:
                 print(f'No elemental data for {__coreid}')
@@ -424,6 +456,21 @@ class data_preparation(object):
                                             'Pretreatment':'pretreatment_dating', 
                                             'Reservoir Age \n(yr)':'reservoir_age', 
                                             'Reservoir Error \n(+/- yr)':'reservoir_error'}, inplace=True)
+            ### For detection limit
+            self.__input_age.reset_index(drop = True, inplace = True)
+            for i in range(0, len(self.__input_age)):
+                if type(self.__input_age.iloc[i,7]) is str and '>' in self.__input_age.iloc[i,7]:
+                    __age_array= self.__input_age.iloc[i,7].split('>')
+                    __age_indi = NumericRange(int(__age_array[1]), None, bounds = '[)', empty = False)
+                    self.__input_age.iloc[i,7] = __age_indi
+                elif type(self.__input_age.iloc[i,7]) is str and '<' in self.__input_age.iloc[i,7]:
+                    __age_array= self.__input_age.iloc[i,7].split('<')
+                    __age_indi = NumericRange(None, int(__age_array[1]), bounds = '()', empty = False)
+                    self.__input_age.iloc[i,7] = __age_indi
+                else:
+                    __age_indi = NumericRange(int(self.__input_age.iloc[i,7]), int(self.__input_age.iloc[i,7]), bounds = '[]', empty = False)
+                    self.__input_age.iloc[i,7] = __age_indi
+            ###
         except KeyError:
             raise Exception(f'No age data for {__coreid} - need age information to be included in MAYHEM database')
 

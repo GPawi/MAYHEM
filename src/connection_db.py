@@ -11,6 +11,7 @@ import sqlalchemy
 import getpass
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+from psycopg2.extras import NumericRange
 
 
 class connection_db(object):
@@ -32,8 +33,7 @@ class connection_db(object):
             self.__db = input(f'What is the database name in which {self.__coreid} should be inserted? ')
             self.__password = password
             
-        self.__engine = sqlalchemy.create_engine(f'postgresql://postgres:{self.__password}@localhost/{self.__db}',
-                                                 executemany_mode='batch')
+        self.__engine = sqlalchemy.create_engine(f'postgresql://postgres:{self.__password}@localhost/{self.__db}', executemany_mode='batch') #, execution_options={"isolation_level": "SERIALIZABLE"})
         
     
     def __upload_scientist__(self, con = []):
@@ -164,12 +164,15 @@ class connection_db(object):
             self.__measurementids_organic[['coreid','compositedepth']] = self.__measurementids_organic['measurementid'].str.split(' ', n = 1, expand = True)
             self.__measurementids_organic = self.__measurementids_organic[['measurementid','coreid','compositedepth']]
             self.__measurementids_organic['compositedepth'].replace(regex=True,inplace=True,to_replace=(r'_duplicate'+r'\d'),value=r'')
+            self.__measurementids_organic = self.__measurementids_organic.astype(dtype = {'measurementid':str, 'coreid': str, 'compositedepth': float}).drop_duplicates()
             try:
-                self.__measurement_organic_duplicate_check = pd.merge(self.__measurementids_organic, pd.read_sql('measurement', con), how ='inner', on = ['measurementid', 'coreid'])
-                self.__measurement_organic_duplicate_check = self.__measurement_organic_duplicate_check.drop(columns = 'compositedepth_y')
-                self.__measurement_organic_duplicate_check = self.__measurement_organic_duplicate_check.rename(columns = {'compositedepth_x':'compositedepth'})
-                self.__measurementids_organic = self.__measurementids_organic.append(self.__measurement_organic_duplicate_check).drop_duplicates(keep=False)
-                self.__measurementids_organic.to_sql('measurement', con, if_exists='append', index = False)
+                self.__down_measurement_org = pd.read_sql('measurement', con)
+                self.__down_measurement_org = self.__down_measurement_org.astype(dtype = {'measurementid':str, 'coreid': str, 'compositedepth': float})
+                self.__measurement_organic_duplicate_check = pd.concat([self.__measurementids_organic.reset_index(drop=True),self.__down_measurement_org.reset_index(drop=True)])
+                self.__measurement_organic_duplicates = self.__measurement_organic_duplicate_check[self.__measurement_organic_duplicate_check.duplicated() == True].reset_index(drop=True)
+                self.__measurement_organic_duplicate_free = self.__measurementids_organic.append(self.__measurement_organic_duplicates)
+                self.__measurement_organic_duplicate_free = self.__measurement_organic_duplicate_free.drop_duplicates(keep = False)
+                self.__measurement_organic_duplicate_free.to_sql('measurement', con, if_exists='append', index = False)
             except IntegrityError:
                 raise Exception(f'There is a problem with core {__coreid} for organic proxy')
             finally:
@@ -187,12 +190,15 @@ class connection_db(object):
             self.__measurementids_grainsize[['coreid','compositedepth']] = self.__measurementids_grainsize['measurementid'].str.split(' ', n = 1, expand = True)
             self.__measurementids_grainsize = self.__measurementids_grainsize[['measurementid','coreid','compositedepth']]
             self.__measurementids_grainsize['compositedepth'].replace(regex=True,inplace=True,to_replace=(r'_duplicate'+r'\d'),value=r'')
+            self.__measurementids_grainsize = self.__measurementids_grainsize.astype(dtype = {'measurementid':str, 'coreid': str, 'compositedepth': float}).drop_duplicates()
             try:
-                self.__measurement_grainsize_duplicate_check = pd.merge(self.__measurementids_grainsize, pd.read_sql('measurement', con), how ='inner', on = ['measurementid', 'coreid'])
-                self.__measurement_grainsize_duplicate_check = self.__measurement_grainsize_duplicate_check.drop(columns = 'compositedepth_y')
-                self.__measurement_grainsize_duplicate_check = self.__measurement_grainsize_duplicate_check.rename(columns = {'compositedepth_x':'compositedepth'})
-                self.__measurementids_grainsize = self.__measurementids_grainsize.append(self.__measurement_grainsize_duplicate_check).drop_duplicates(keep=False)
-                self.__measurementids_grainsize.to_sql('measurement', con, if_exists='append', index = False)
+                self.__down_measurement_grain = pd.read_sql('measurement', con)
+                self.__down_measurement_grain = self.__down_measurement_grain.astype(dtype = {'measurementid':str, 'coreid': str, 'compositedepth': float})
+                self.__measurement_grainsize_duplicate_check = pd.concat([self.__measurementids_grainsize.reset_index(drop=True),self.__down_measurement_grain.reset_index(drop=True)])
+                self.__measurement_grainsize_duplicates = self.__measurement_grainsize_duplicate_check[self.__measurement_grainsize_duplicate_check.duplicated() == True].reset_index(drop=True)
+                self.__measurement_grainsize_duplicate_free = self.__measurementids_grainsize.append(self.__measurement_grainsize_duplicates)
+                self.__measurement_grainsize_duplicate_free = self.__measurement_grainsize_duplicate_free.drop_duplicates(keep = False)
+                self.__measurement_grainsize_duplicate_free.to_sql('measurement', con, if_exists='append', index = False)
             except IntegrityError:
                 raise Exception(f'There is a problem with core {__coreid} for grain size proxy')
             finally:

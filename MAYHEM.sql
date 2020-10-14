@@ -197,8 +197,8 @@ CREATE TABLE organic (
 	tn numrange NULL,
 	tc numrange NULL,
 	toc numrange NULL,
-	d13c numeric(4,2) NULL,
-	water_content numeric(5,2) NULL,
+	d13c numrange NULL,
+	water_content numrange NULL,
 	CONSTRAINT organics_un PRIMARY KEY (measurementid),
 	CONSTRAINT organics_fk FOREIGN KEY (measurementid) REFERENCES measurement(measurementid)
 );
