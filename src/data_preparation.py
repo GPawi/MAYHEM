@@ -3,8 +3,6 @@
 """
 Author: Gregor Pfalz
 github: GPawi
-
-Plans for v2: combine diatom, chironomid and pollen data prep in one function
 """
 
 import numpy as np
@@ -242,7 +240,21 @@ class data_preparation(object):
                 print(f'No __publication found for {__coreid}')
             else:
                 pass
-        
+    
+    def __transform_many_to_one(self, input_dictionary, name, columns, index_a, index_b):
+        data = input_dictionary[name]
+        data.columns = data.iloc[index_a]
+        data = data.drop(data.index[index_a])
+        data = data.iloc[index_a:, index_b:]
+        data = data.dropna(axis = 1, how = 'all')
+        names = data.columns[index_b:].values.tolist()
+        output = pd.DataFrame(columns = columns)
+        for j in range(1,len(names)+1):
+            for k in range(0,len(data)):
+                row = pd.DataFrame(np.array([[data.iloc[k,0],names[j-1],data.iloc[k,j]]]), columns = columns)
+                output= output.append(row)
+        return output
+    
     def __organic_input__(self):
         __input_dictionary = self.__input_dictionary
         __coreid = self.__coreid
@@ -308,22 +320,14 @@ class data_preparation(object):
             else:
                 pass
     
+    
     def __element_input__(self):
         __input_dictionary = self.__input_dictionary
         __coreid = self.__coreid
         __suppress_message = self.__suppress_message
         try:
-            self.__element_data = __input_dictionary['Element']
-            self.__element_data.columns = self.__element_data.iloc[5]
-            self.__element_data = self.__element_data.drop(self.__element_data.index[5])
-            self.__element_data = self.__element_data.iloc[5:, 1:]
-            self.__element_data = self.__element_data.dropna(axis = 1, how = 'all')
-            self.__element_names = self.__element_data.columns[1:].values.tolist()
-            self.__input_element= pd.DataFrame(columns = ['measurementid','element_name','element_value'])
-            for j in range(1,len(self.__element_names)+1):
-                for k in range(0,len(self.__element_data)):
-                    self.__element_row = pd.DataFrame(np.array([[self.__element_data.iloc[k,0],self.__element_names[j-1],self.__element_data.iloc[k,j]]]), columns = ['measurementid','element_name','element_value'])
-                    self.__input_element= self.__input_element.append(self.__element_row)
+            self.__element_columns = ['measurementid','element_name','element_value']
+            self.__input_element = self.__transform_many_to_one(__input_dictionary, 'Element', self.__element_columns, 5, 1)
             ### For detection limit
             self.__input_element.reset_index(drop = True, inplace = True)
             for i in range(0, len(self.__input_element)):
@@ -374,17 +378,8 @@ class data_preparation(object):
         __coreid = self.__coreid
         __suppress_message = self.__suppress_message
         try:
-            self.__diatom_data = __input_dictionary['Diatom']
-            self.__diatom_data.columns = self.__diatom_data.iloc[5]
-            self.__diatom_data = self.__diatom_data.drop(self.__diatom_data.index[5])
-            self.__diatom_data = self.__diatom_data.iloc[5:, 1:]
-            self.__diatom_data = self.__diatom_data.dropna(axis = 1, how = 'all')
-            self.__diatom_names = self.__diatom_data.columns[1:].values.tolist()
-            self.__input_diatom = pd.DataFrame(columns = ['measurementid','diatom_taxa','diatom_count'])
-            for j in range(1,len(self.__diatom_names)+1):
-                for k in range(0,len(self.__diatom_data)):
-                    self.__diatom_row = pd.DataFrame(np.array([[self.__diatom_data.iloc[k,0],self.__diatom_names[j-1],self.__diatom_data.iloc[k,j]]]), columns = ['measurementid','diatom_taxa','diatom_count'])
-                    self.__input_diatom = self.__input_diatom.append(self.__diatom_row)
+            self.__diatom_columns = ['measurementid','diatom_taxa','diatom_count']
+            self.__input_diatom = self.__transform_many_to_one(__input_dictionary, 'Diatom', self.__diatom_columns, 5, 1)
         except KeyError:
             if __suppress_message == False:
                 print(f'No diatom data for {__coreid}')
@@ -396,17 +391,8 @@ class data_preparation(object):
         __coreid = self.__coreid
         __suppress_message = self.__suppress_message
         try:
-            self.__chironomid_data = __input_dictionary['Chironomid']
-            self.__chironomid_data.columns = self.__chironomid_data.iloc[6]
-            self.__chironomid_data = self.__chironomid_data.drop(self.__chironomid_data.index[6])
-            self.__chironomid_data  = self.__chironomid_data.iloc[6:, 1:]
-            self.__chironomid_data  = self.__chironomid_data.dropna(axis = 1, how = 'all')
-            self.__chironomid_names = self.__chironomid_data.columns[1:].values.tolist()
-            self.__input_chironomid = pd.DataFrame(columns = ['measurementid','chironomid_taxa','chironomid_count'])
-            for j in range(1,len(self.__chironomid_names)+1):
-                for k in range(0,len(self.__chironomid_data )):
-                    self.__chironomid_row = pd.DataFrame(np.array([[self.__chironomid_data.iloc[k,0],self.__chironomid_names[j-1],self.__chironomid_data.iloc[k,j]]]), columns = ['measurementid','chironomid_taxa','chironomid_count'])
-                    self.__input_chironomid = self.__input_chironomid.append(self.__chironomid_row)
+            self.__chironomid_columns = ['measurementid','chironomid_taxa','chironomid_count']
+            self.__input_chironomid = self.__transform_many_to_one(__input_dictionary, 'Chironomid', self.__chironomid_columns, 6, 1)
         except KeyError:
             if __suppress_message == False:
                 print(f'No chironomid data for {__coreid}')
@@ -418,17 +404,8 @@ class data_preparation(object):
         __coreid = self.__coreid
         __suppress_message = self.__suppress_message
         try:
-            self.__pollen_data = __input_dictionary['Pollen']
-            self.__pollen_data.columns = self.__pollen_data.iloc[6]
-            self.__pollen_data = self.__pollen_data.drop(self.__pollen_data.index[6])
-            self.__pollen_data = self.__pollen_data.iloc[6:, 1:]
-            self.__pollen_data = self.__pollen_data.dropna(axis = 1, how = 'all')
-            self.__pollen_names = self.__pollen_data.columns[1:].values.tolist()
-            self.__input_pollen = pd.DataFrame(columns = ['measurementid','pollen_taxa','pollen_count'])
-            for j in range(1,len(self.__pollen_names)+1):
-                for k in range(0,len(self.__pollen_data)):
-                    self.__pollen_row = pd.DataFrame(np.array([[self.__pollen_data.iloc[k,0],self.__pollen_names[j-1],self.__pollen_data.iloc[k,j]]]), columns = ['measurementid','pollen_taxa','pollen_count'])
-                    self.__input_pollen = self.__input_pollen.append(self.__pollen_row)
+            self.__pollen_columns = ['measurementid','pollen_taxa','pollen_count']
+            self.__input_pollen = self.__transform_many_to_one(__input_dictionary, 'Pollen', self.__pollen_columns, 6, 1)
         except KeyError:
             if __suppress_message == False:
                 print(f'No pollen data for {__coreid}')
