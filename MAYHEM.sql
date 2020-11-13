@@ -12,6 +12,7 @@ CREATE SCHEMA analysis_system AUTHORIZATION postgres;
 ALTER DATABASE "MAYHEM-Example" SET search_path TO analysis_system;
 SET search_path TO analysis_system;
 
+
 -- analysis_system.climateclassification definition
 
 -- Drop table
@@ -62,6 +63,60 @@ INSERT INTO climateclassification (climatezone,czdefinition) VALUES
 ;
 
 
+-- analysis_system.vegetationclassification definition
+
+-- Drop table
+
+-- DROP TABLE vegetationclassification;
+
+CREATE TABLE vegetationclassification (
+	vegetationzone varchar NOT NULL,
+	vzdefinition varchar NULL,
+	CONSTRAINT vegetationclassification_pk PRIMARY KEY (vegetationzone)
+);
+
+INSERT INTO vegetationclassification (vegetationzone,vzdefinition) VALUES 
+('Tundra','More than 5% of ground covered by lichens, mosses and vascular plants - Plants do not exceed 40 cm in height - Located at latitudes 55 degree to 70 degree North; growing season 50-60 days OR located at 3000 m a.s.l.')
+,('Grassland','More than 5% of ground covered by lichens, mosses and vascular plants - Plants do not exceed 40 cm in height - Located South of 55 degree North and beneath 3000 m a.s.l.')
+,('Shrub Tundra','More than 5% of ground covered by lichens, mosses and vascular plants - Plants exceed 40 cm in height - Landscape dominated by shrubs <40 cm tall, can alongside watercourses reach height of >2 m')
+,('Forest Tundra','More than 5% of ground covered by lichens, mosses and vascular plants - Plants exceed 40 cm in height - Landscape characterized by higher trees and shrubs - Tree cover discontinuous and/or sparse; transitional zone between tundra/shrub tundra and forest')
+,('Coniferous Forest','More than 5% of ground covered by lichens, mosses and vascular plants - Plants exceed 40 cm in height - Landscape characterized by higher trees and shrubs - Tree cover continuous - 76-100% of the canopy composed of coniferous trees (tree species with needle-like or scale-like evergreen leaves)')
+,('Deciduous Forest','More than 5% of ground covered by lichens, mosses and vascular plants - Plants exceed 40 cm in height - Landscape characterized by higher trees and shrubs - Tree cover continuous - 76-100% of the canopy composed of deciduous trees (tree species which lose their leaves seasonally)')
+,('Polar Desert','Less than 5% of ground covered by lichens, mosses and vascular plants - Located North of 70 degree and low annual precipitation OR in Antarctic')
+,('No Vegetation','Less than 5% of ground covered by lichens, mosses and vascular plants - Other location')
+,('Other','Vegetation different from the described types')
+;
+
+
+-- analysis_system.lakeclassification definition
+
+-- Drop table
+
+-- DROP TABLE lakeclassification;
+
+CREATE TABLE lakeclassification (
+	laketype varchar NOT NULL,
+	lakedefinition varchar NULL,
+	CONSTRAINT lakeclassification_pk PRIMARY KEY (laketype)
+);
+
+INSERT INTO lakeclassification (laketype,lakedefinition) VALUES 
+('Aeolian lake','Formed by deflation basins; lakes dammed by wind-blown sediment')
+,('Anthropogenic lake','Formed by dams and excavation fill')
+,('Fluvial lake','Formed by plunge pools, delta lakes, meander lakes (oxbows, levees)')
+,('Glacial lake','Formed in glacigenic sediments by ice-melting ("kettle" lakes) or through impeded drainage behind or between glacigenic landforms (e.g. moraine, drumlins)')
+,('Landslide lake','Formed by rockslides, mudflows and screes')
+,('Meteorite lake','Formed by water accumulating in meteorite craters')
+,('Organic lake','Formed through blocking by vegetation, beaver dams ("phytogenic" lakes); coral lakes')
+,('Shoreline lake','Formed by damming of material transported by longshore drift; tombolas, spit-lakes')
+,('Solution lake','Formed by ground solution of limestone, other calcareous rocks, gypsum, rock salt')
+,('Tectonic lake','From by a) Epeirogenic movements; b) tilting, folding or warping')
+;
+INSERT INTO lakeclassification (laketype,lakedefinition) VALUES 
+('Thermokarst lake','Closed depression formed by settlement of the ground following thawing of ice-rich permafrost or the melting of massive ice')
+,('Volcanic lake','a) Maars, calderas and crater lakes; b) Formed by damming of drainage by lava or volcanic debris')
+;
+
 -- analysis_system.scientist definition
 
 -- Drop table
@@ -73,7 +128,7 @@ CREATE TABLE scientist (
 	firstname varchar NULL,
 	lastname varchar NULL,
 	email varchar NULL,
-	orcid varchar(37) NULL,
+	orcid varchar(19) NULL,
 	CONSTRAINT scientist_pk PRIMARY KEY (scientistid)
 );
 
@@ -100,7 +155,8 @@ CREATE TABLE expedition (
 -- DROP TABLE lake;
 
 CREATE TABLE lake (
-	sitename varchar NOT NULL,
+	lakeid varchar NOT NULL,
+	sitename varchar NULL,
 	country varchar NULL,
 	lakedepth numeric(6,2) NULL,
 	lakeextent float8 NULL,
@@ -108,8 +164,10 @@ CREATE TABLE lake (
 	climatezone varchar(3) NULL,
 	vegetationzone varchar NULL,
 	laketype varchar NULL,
-	CONSTRAINT lake_pk PRIMARY KEY (sitename),
-	CONSTRAINT lake_climateclassification_fk FOREIGN KEY (climatezone) REFERENCES climateclassification(climatezone)
+	CONSTRAINT lake_pk PRIMARY KEY (lakeid),
+	CONSTRAINT lake_climateclassification_fk FOREIGN KEY (climatezone) REFERENCES climateclassification(climatezone),
+	CONSTRAINT lake_vegetationclassification_fk FOREIGN KEY (vegetationzone) REFERENCES vegetationclassification(vegetationzone),
+	CONSTRAINT lake_lakeclassification_fk FOREIGN KEY (laketype) REFERENCES lakeclassification(laketype)
 );
 
 
@@ -126,12 +184,12 @@ CREATE TABLE drilling (
 	waterdepth numeric(5,2) NOT NULL,
 	corelength numeric(5,2) NOT NULL,
 	drillingdevice varchar NULL,
-	sitename varchar NOT NULL,
+	lakeid varchar NOT NULL,
 	expeditionname varchar NOT NULL,
 	expeditionyear int4 NOT NULL,
 	CONSTRAINT drilling_pk PRIMARY KEY (coreid),
 	CONSTRAINT drilling_expedition_fk FOREIGN KEY (expeditionname, expeditionyear) REFERENCES expedition(expeditionname, expeditionyear),
-	CONSTRAINT drilling_lake_fk FOREIGN KEY (sitename) REFERENCES lake(sitename)
+	CONSTRAINT drilling_lake_fk FOREIGN KEY (lakeid) REFERENCES lake(lakeid)
 );
 
 
@@ -241,14 +299,28 @@ CREATE TABLE pollen (
 -- DROP TABLE publication;
 
 CREATE TABLE publication (
+	pubid serial NOT NULL,
 	pubshort varchar NOT NULL,
-	citation varchar NOT NULL,
+	fullcitation varchar NOT NULL,
 	type varchar(12) NOT NULL,
-	coreid varchar NOT NULL,
-	CONSTRAINT publication_un PRIMARY KEY (coreid, pubshort),
-	CONSTRAINT publication_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid)
+	doi varchar NOT NULL,
+	CONSTRAINT publication_un PRIMARY KEY (pubid)
 );
 
+
+-- analysis_system.citation definition
+
+-- Drop table
+
+-- DROP TABLE citation;
+
+CREATE TABLE citation (
+	coreid varchar NOT NULL,
+	pubid int4 NOT NULL,
+	CONSTRAINT citation_un PRIMARY KEY (coreid, pubid),
+	CONSTRAINT citation_drilling_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid),
+	CONSTRAINT citation_publication_fk FOREIGN KEY (pubid) REFERENCES publication(pubid)
+);
 
 -- analysis_system.source definition
 
@@ -257,15 +329,27 @@ CREATE TABLE publication (
 -- DROP TABLE source;
 
 CREATE TABLE source (
-	coreid varchar NOT NULL,
-	entity varchar NOT NULL,
+	fileid serial NOT NULL,
 	repository varchar NOT NULL,
 	filename varchar NOT NULL,
-	accessible varchar NULL,
-	CONSTRAINT source_un PRIMARY KEY (coreid, entity, filename),
-	CONSTRAINT source_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid)
+	accessible varchar NOT NULL,
+	CONSTRAINT source_un PRIMARY KEY (fileid)
 );
 
+-- analysis_system.storage definition
+
+-- Drop table
+
+-- DROP TABLE storage;
+
+CREATE TABLE storage (
+	coreid varchar NOT NULL,
+	fileid int4 NOT NULL,
+	entity varchar NOT NULL,
+	CONSTRAINT storage_un PRIMARY KEY (coreid, fileid, entity),
+	CONSTRAINT storage_drilling_fk FOREIGN KEY (coreid) REFERENCES drilling(coreid),
+	CONSTRAINT storage_source_fk FOREIGN KEY (fileid) REFERENCES source(fileid)
+);
 
 -- analysis_system.agedetermination definition
 
