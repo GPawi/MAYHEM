@@ -5,6 +5,7 @@ Author: Gregor Pfalz
 github: GPawi
 """
 
+
 import numpy as np
 import pandas as pd
 import sqlalchemy
@@ -131,12 +132,14 @@ class data_preparation(object):
     def __lake_input__(self):
         __input_main = self.__input_main
         ##
-        self.__lake_columns = ['sitename','country',
+        self.__lake_columns = ['lakeid','sitename','country',
                              'lakedepth','lakeextent',
                              'catchmentarea','climatezone',
                              'vegetationzone','laketype']
         self.__lake = pd.DataFrame(columns = self.__lake_columns)
         try:
+            self.__lakeid = __input_main[(__input_main == 'LakeID').any(1)].dropna(axis = 1).iloc[0,1]
+            self.__lake.at[0,'lakeid'] = self.__lakeid
             self.__sitename = __input_main[(__input_main == 'Site Name').any(1)].dropna(axis = 1).iloc[0,1]
             self.__lake.at[0,'sitename'] = self.__sitename
             self.__country = __input_main[(__input_main == 'Country').any(1)].dropna(axis = 1).iloc[0,1]
@@ -159,14 +162,14 @@ class data_preparation(object):
     def __drilling_input__(self):
         __input_main = self.__input_main
         __coreid = self.__coreid
-        __sitename = self.__sitename
+        __lakeid = self.__lakeid
         __expeditionname = self.__expeditionname
         __expeditionyear = self.__expeditionyear
         ##
         self.__drilling_columns = ['coreid',
                                  'latitude','longitude',
                                  'waterdepth','corelength',
-                                 'drillingdevice','sitename',
+                                 'drillingdevice','lakeid',
                                  'expeditionname','expeditionyear']
         self.__drilling = pd.DataFrame(columns = self.__drilling_columns)
         try:
@@ -181,13 +184,14 @@ class data_preparation(object):
             self.__drilling.at[0,'corelength'] = self.__corelength
             self.__drillingdevice = __input_main[(__input_main == 'Drilling Device').any(1)].dropna(axis = 1).iloc[0,1]
             self.__drilling.at[0,'drillingdevice'] = self.__drillingdevice
-            self.__drilling.at[0,'sitename'] = __sitename
+            self.__drilling.at[0,'lakeid'] = __lakeid
             self.__drilling.at[0,'expeditionname'] = __expeditionname
             self.__drilling.at[0,'expeditionyear'] = __expeditionyear
         except IndexError:
             raise Exception('Please add more information about the lake!')
     
     def __source_input__(self):
+        ### this is called source, but is actually the preparation for both 'source' and 'storage'
         __input_main = self.__input_main
         ##
         self.__start_index_source = __input_main[(__input_main == 'Sources').any(1)].dropna(axis = 1).index[0]
@@ -207,8 +211,17 @@ class data_preparation(object):
                                                     'File Name':'filename',
                                                     'Accessible':'accessible'})
         self.__source = self.__source.dropna(axis = 0)
+        self.__source = self.__source.assign(repository=self.__source['repository'].str.split('\\'),
+                                             filename=self.__source['filename'].str.split('\\'),
+                                            accessible=self.__source['accessible'].str.split('\\')).apply(pd.Series.explode).reset_index(drop = True)
+        for i,r in self.__source.iterrows():
+            if len(self.__source.at[i,'repository']) == 0 or             len(self.__source.at[i,'filename']) == 0 or             len(self.__source.at[i,'accessible']) == 0:
+                self.__source = self.__source.drop(i)
+        self.__source = self.__source.apply(lambda x: x.str.strip())
+        self.__source = self.__source.reset_index(drop = True)
         
     def __publication_input__(self):
+        ### this is called publication, but is actually the preparation for both 'publication' and 'citation'
         __input_main = self.__input_main
         __coreid = self.__coreid
         __suppress_message = self.__suppress_message
@@ -223,7 +236,7 @@ class data_preparation(object):
         self.__publication_column_search = __input_main[(__input_main == 'Publication').any(1)].dropna(axis = 1)
         self.__start_column_publication = self.__publication_column_search[(self.__publication_column_search == 'Publication').any(1)].columns[0]
         self.__start_column_publication = (__input_main.columns.get_loc(self.__start_column_publication))
-        self.__stop_column_publication = self.__start_column_publication + 3
+        self.__stop_column_publication = self.__start_column_publication + 4
         
         
         
@@ -232,9 +245,11 @@ class data_preparation(object):
         if len(self.__publication) > 1:
             self.__publication = self.__publication.drop(self.__publication.index[0])
             self.__publication = self.__publication.rename(columns = {'Type':'type',
-                                                 'Short Version':'pubshort',
-                                                 'Full Citation':'citation'})
+                                                                      'Short Version':'pubshort',
+                                                                      'Full Citation':'fullcitation',
+                                                                      'DOI':'doi'})
             self.__publication = self.__publication.dropna(axis = 0)
+            self.__publication = self.__publication[['pubshort','fullcitation','type','doi']]
         else:
             if __suppress_message == False:
                 print(f'No __publication found for {__coreid}')
@@ -330,6 +345,9 @@ class data_preparation(object):
             self.__input_element = self.__transform_many_to_one(__input_dictionary, 'Element', self.__element_columns, 5, 1)
             ### For detection limit
             self.__input_element.reset_index(drop = True, inplace = True)
+            for i,r in self.__input_element.iterrows():
+                if self.__input_element.at[i, 'element_value'] == 'nan': 
+                      self.__input_element.drop(i, inplace = True)          
             for i in range(0, len(self.__input_element)):
                 if type(self.__input_element.iloc[i,2]) is str and '<' in self.__input_element.iloc[i,2]:
                     __element_array = self.__input_element.iloc[i,2].split('<')

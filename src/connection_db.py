@@ -46,7 +46,7 @@ class connection_db(object):
                 self.__scientist = self.__scientist_duplicate_check
                 print ('Scientist(s) already exist!')
             elif any(self.__scientist_duplicate_check.columns == 'scientistid') and (len(self.__scientist_duplicate_check) != len(self.__scientist)) and (len(self.__scientist_duplicate_check)>0):
-                self.__new_scientist = self.__scientist[~self.__scientist.isin(self.__scientist_duplicate_check)].dropna()
+                self.__new_scientist = self.__scientist[~self.__scientist['orcid'].isin(self.__scientist_duplicate_check['orcid'])].dropna()
                 self.__new_scientist.to_sql('scientist', con, if_exists='append', index = False)
                 self.__scientist_duplicate_check = pd.merge(self.__scientist, pd.read_sql('scientist', con), how ='inner', on = self.__scientist_columns)
                 self.__scientist = self.__scientist_duplicate_check
@@ -155,6 +155,106 @@ class connection_db(object):
         except:
             print ('There was an issue - Please report to Gregor Pfalz (Gregor.Pfalz@awi.de)!')
     
+    
+    def __upload_source__(self, con = []):
+        __core = self.__core
+        self.__source = __core._data_preparation__source
+        self.__source = self.__source[['repository','filename','accessible']].drop_duplicates()
+        try:
+            self.__source_duplicate_check = pd.merge(self.__source, pd.read_sql('source', con), how ='inner', on = ['repository','filename','accessible'])
+            if any(self.__source_duplicate_check.columns == 'fileid') and (len(self.__source_duplicate_check) == len(self.__source)):
+                self.__source = self.__source_duplicate_check
+                print ('Source(s) already exist!')
+            elif any(self.__source_duplicate_check.columns == 'fileid') and (len(self.__source_duplicate_check) != len(self.__source)) and (len(self.__source_duplicate_check)>0):
+                self.__new_source = self.__source[(pd.merge(self.__source, self.__source_duplicate_check, how = 'left', indicator = True)['_merge'] == 'left_only').values].dropna()
+                self.__new_source.to_sql('source', con, if_exists='append', index = False)
+                self.__source_duplicate_check = pd.merge(self.__source, pd.read_sql('source', con), how ='inner', on = ['repository','filename','accessible'])
+                self.__source = self.__source_duplicate_check
+                print ('Added new source(s)!')
+            else:
+                self.__source.to_sql('source', con, if_exists='append', index = False)
+                self.__source_duplicate_check = pd.merge(self.__source, pd.read_sql('source', con), how ='inner', on = ['repository','filename','accessible'])
+                self.__source = self.__source_duplicate_check
+                print ('All source(s) added!')
+        except:
+            print ('There was an issue - Please report to Gregor Pfalz (Gregor.Pfalz@awi.de)!')               
+
+        
+    def __upload_storage__(self, con = []):
+        __core = self.__core
+        self.__storage = __core._data_preparation__source
+        __coreid = self.__coreid
+        self.__storage['coreid'] = __coreid
+        self.__storage = pd.merge(self.__storage, self.__source, how ='inner', on = ['repository','filename','accessible'])
+        self.__storage = self.__storage[['coreid','fileid','entity']]
+        try:
+            self.__storage_duplicate_check = pd.merge(self.__storage, pd.read_sql('storage', con), how ='inner', on = ['coreid','fileid','entity'])
+            if (len(self.__storage_duplicate_check) == len(self.__storage)):
+                self.__storage = self.__storage_duplicate_check
+                print ('File attribution already registered!')
+            elif (len(self.__storage_duplicate_check) != len(self.__storage)):
+                self.__new_storage = self.__storage[~self.__storage.isin(self.__storage_duplicate_check)].dropna()
+                self.__new_storage.to_sql('storage', con, if_exists='append', index = False)
+                self.__storage_duplicate_check = pd.merge(self.__storage, pd.read_sql('storage', con), how ='inner', on = ['coreid','fileid','entity'])
+                self.__storage = self.__storage_duplicate_check
+                print (f'Added file(s) to entities of {__coreid}!')
+            else:
+                self.__storage.to_sql('storage', con, if_exists='append', index = False)
+                self.__storage_duplicate_check = pd.merge(self.__storage, pd.read_sql('storaget', con), how ='inner', on = ['coreid','fileid','entity'])
+                self.__storage = self.__storage_duplicate_check
+                print (f'File(s) added to entities for {__coreid}!')
+        except:
+            print ('There was an issue - Please report to Gregor Pfalz (Gregor.Pfalz@awi.de)!')
+                              
+        
+    def __upload_publication__(self, con = []):
+        __core = self.__core
+        self.__publication = __core._data_preparation__publication
+        try:
+            self.__publication_duplicate_check = pd.merge(self.__publication, pd.read_sql('publication', con), how ='inner', on = ['pubshort','fullcitation','type','doi'])
+            if any(self.__publication_duplicate_check.columns == 'pubid') and (len(self.__publication_duplicate_check) == len(self.__publication)):
+                self.__publication = self.__publication_duplicate_check
+                print ('Publication(s) already exist!')
+            elif any(self.__publication_duplicate_check.columns == 'pubid') and (len(self.__publication_duplicate_check) != len(self.__publication)) and (len(self.__publication_duplicate_check)>0):
+                self.__new_publication = self.__publication[~self.__publication['doi'].isin(self.__publication_duplicate_check['doi'])].dropna()
+                self.__new_publication.to_sql('publication', con, if_exists='append', index = False)
+                self.__publication_duplicate_check = pd.merge(self.__publication, pd.read_sql('publication', con), how ='inner', on = ['pubshort','fullcitation','type','doi'])
+                self.__publication = self.__publication_duplicate_check
+                print ('Added new publication(s)!')
+            else:
+                self.__publication.to_sql('publication', con, if_exists='append', index = False)
+                self.__publication_duplicate_check = pd.merge(self.__publication, pd.read_sql('publication', con), how ='inner', on = ['pubshort','fullcitation','type','doi'])
+                self.__publication = self.__publication_duplicate_check
+                print ('All publication(s) added!')
+        except:
+            print ('There was an issue - Please report to Gregor Pfalz (Gregor.Pfalz@awi.de)!')    
+                              
+ 
+    def __upload_citation__(self, con = []):
+        self.__citation = self.__publication
+        __coreid = self.__coreid
+        self.__citation['coreid'] = __coreid
+        self.__citation = self.__citation[['coreid','pubid']]
+        try:
+            self.__citation_duplicate_check = pd.merge(self.__citation, pd.read_sql('citation', con), how ='inner', on = ['coreid','pubid'])
+            if (len(self.__citation_duplicate_check) == len(self.__citation)):
+                self.__citation = self.__citation_duplicate_check
+                print ('Citation(s) already registered!')
+            elif (len(self.__citation_duplicate_check) != len(self.__citation)):
+                self.__new_citation = self.__citation[~self.__citation.isin(self.__citation_duplicate_check)].dropna()
+                self.__new_citation.to_sql('citation', con, if_exists='append', index = False)
+                self.__citation_duplicate_check = pd.merge(self.__citation, pd.read_sql('citation', con), how ='inner', on = ['coreid','pubid'])
+                self.__citation = self.__citation_duplicate_check
+                print (f'Added new citation(s) to {__coreid}!')
+            else:
+                self.__citation.to_sql('citation', con, if_exists='append', index = False)
+                self.__citation_duplicate_check = pd.merge(self.__citation, pd.read_sql('citation', con), how ='inner', on = ['coreid','pubid'])
+                self.__citation = self.__citation_duplicate_check
+                print (f'Citation(s) added for {__coreid}!')
+        except:
+            print ('There was an issue - Please report to Gregor Pfalz (Gregor.Pfalz@awi.de)!')    
+       
+        
     def __upload_organic__(self, con = []): 
         __core = self.__core
         __coreid = self.__coreid
@@ -377,16 +477,20 @@ class connection_db(object):
                               3 : self.__upload_lake__,
                               4 : self.__upload_drilling__,
                               5 : self.__upload_participant__,
-                              6 : self.__upload_organic__,
-                              7 : self.__upload_grainsize__,
-                              8 : self.__upload_element__,
-                              9 : self.__upload_mineral__,
-                              10 : self.__upload_diatom__,
-                              11 : self.__upload_chironomid__,
-                              12 : self.__upload_pollen__,
-                              13 : self.__upload_age__}
+                              6 : self.__upload_source__,
+                              7 : self.__upload_storage__,
+                              8 : self.__upload_publication__,
+                              9 : self.__upload_citation__,
+                              10 : self.__upload_organic__,
+                              11 : self.__upload_grainsize__,
+                              12 : self.__upload_element__,
+                              13 : self.__upload_mineral__,
+                              14 : self.__upload_diatom__,
+                              15 : self.__upload_chironomid__,
+                              16 : self.__upload_pollen__,
+                              17 : self.__upload_age__}
         
-        for method in range(1,14):
+        for method in range(1,18):
             session = Session()
             con = session.get_bind()
             if self.__upload_stop == False:
